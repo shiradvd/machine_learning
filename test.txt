@@ -1,0 +1,98 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov 22 09:54:04 2017
+
+@author: Shiradvd
+"""
+
+
+import csv
+
+import matplotlib.pyplot as plt
+%matplotlib inline
+import numpy as np
+import pandas as pd
+import pylab as P
+
+#set your working_dir
+working_dir = "/Users/Shiradvd/Desktop/ML/Exercise2"
+
+# For .read_csv, always use header=0 when you know row 0 is the header row
+original = pd.read_csv(working_dir+"/ElectionsData.csv", header=0)
+train = pd.read_csv(working_dir+"/ElectionsData.csv", header=0)
+validation = pd.read_csv(working_dir+"/ElectionsData.csv", header=0)
+test = pd.read_csv(working_dir+"/ElectionsData.csv", header=0)
+
+
+#number of distinct Vote values
+VoteNum = train.Vote.unique().size
+uniqueVotes = train.Vote.unique()
+print(VoteNum) #10
+
+#Need to update ??? to the party name
+for i in range(0,VoteNum):
+    print uniqueVotes[i], \
+    len(train[ (train['Gender'] == 'Male') & (uniqueVotes[i] == train['Vote'])]),\
+    len(train[ (train['Gender'] == 'Female') & (uniqueVotes[i] == train['Vote'])])
+#looks like male & female are same    
+    
+    
+## Preparing the data for Machine Learning
+### Cleaning the data, creating new features, transforming to numeric values, droping NaNs
+
+
+#-------------------------------
+
+train.isnull().sum()
+#train.info()
+train.describe(include='all')
+
+#1 - type modification start! 
+
+# Identify which of the orginal features are objects
+ObjFeat=train.keys()[train.dtypes.map(lambda x: x=='object')]
+
+# Transform the original features to categorical
+# Creat new 'int' features, resp.
+for f in ObjFeat:
+    train[f] = train[f].astype("category")
+    train[f+"_Int"] = train[f].cat.rename_categories(range(train[f].nunique())).astype(int)
+    train.loc[train[f].isnull(), f+"_Int"] = np.nan #fix NaN conversion
+
+
+print(ObjFeat)
+train.dtypes
+train.head()
+
+# Remove category fields
+train.dtypes[ObjFeat]
+train = train.drop(ObjFeat, axis=1)
+train.info()
+#Here we have all the data as float64 - 
+#1 - type modification done! 
+
+#2 - value modification start!
+
+#fix field 1 - Avg_monthly_expense_when_under_age_21
+train.Avg_monthly_expense_when_under_age_21.dropna().hist(bins=100)
+P.show()
+#set wrong values to NAN
+train[train.Avg_monthly_expense_when_under_age_21<0]= np.nan
+#fix field 2 - Avg_Satisfaction_with_previous_vote
+train.Avg_Satisfaction_with_previous_vote.dropna().hist()
+P.show()
+#set wrong values to NAN
+train[train.Avg_Satisfaction_with_previous_vote<0]= np.nan
+
+
+#2 - value modification done!
+
+
+
+#3 - fill missing values with mean
+train_NoNulls = train.fillna(train.mean(), inplace=False)
+train_NoNulls.describe()
+# 3 - fill missing values done!
+
+
